@@ -12,11 +12,9 @@ while (name.Length == 0)
     Console.WriteLine("Enter your characters name:");
     name = Console.ReadLine();
 }
-Character player =  new Character(name, world.Height/2, world.Width/2);
+Character player =  new Character(name, world.Height, world.Width);
 
-Console.WriteLine($"Your character: {player.Name}/n" +
-                  $"HP: {player.Health}/n" +
-                  $"Damage: {player.Damage}");
+Console.WriteLine($"Your character: {player.Name}\nHP: {player.Health}\nDamage: {player.Damage}");
 Goblin een = new Goblin(20, "een", 5,world.Width,world.Height);
 Goblin twee = new Goblin(20, "twee", 5,world.Width,world.Height);
 Goblin drie = new Goblin(20, "drie", 5,world.Width,world.Height);
@@ -30,25 +28,7 @@ Console.WriteLine("Press enter to start.");
 Console.ReadLine();
 while (true)
 {
+    Console.Clear();
     VisualHelper.ShowBoard(game);
-    //position check
-    ConsoleKey key = Console.ReadKey(intercept: true).Key;
-    
-    switch (key)
-    {
-        case ConsoleKey.Z or ConsoleKey.UpArrow:
-            if (player.hpos > 0) player.hpos--;
-            break;
-        case ConsoleKey.S or ConsoleKey.DownArrow:
-            if (player.hpos < world.Height - 1) player.hpos++;
-            break;
-        case ConsoleKey.Q or ConsoleKey.LeftArrow:
-            if (player.wpos > 0) player.wpos--;
-            break;
-        case ConsoleKey.D or ConsoleKey.RightArrow:
-            if (player.wpos < world.Width - 1) player.wpos++;
-            break;
-        case ConsoleKey.Escape:
-            return;
-    }
+    GameStateHelper.getMovement(game);
 }
