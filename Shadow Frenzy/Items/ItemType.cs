@@ -1,4 +1,4 @@
-﻿namespace Shadow_Frenzy.Characters;
+﻿namespace Shadow_Frenzy.Items;
 
 public enum ItemType
 {

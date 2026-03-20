@@ -1,7 +1,6 @@
-﻿using Shadow_Frenzy.Characters;
-using Shadow_Frenzy.Enemies;
-using Shadow_Frenzy.Game;
-using Shadow_Frenzy.WorldGeneration;
+﻿using Shadow_Frenzy.Game;
+using Shadow_Frenzy.World;
+
 
 GameState game = GameStateHelper.StartNewGame();
 VisualHelper.ShowPlayerInfo(game.Player);

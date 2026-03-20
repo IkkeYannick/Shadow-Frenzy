@@ -1,12 +1,12 @@
 ﻿using Shadow_Frenzy.Characters;
 using Shadow_Frenzy.Enemies;
-using Shadow_Frenzy.WorldGeneration;
+using Shadow_Frenzy.World;
 
 namespace Shadow_Frenzy.Game;
 
 public class GameState
 {
-    public World World { get; set; }
+    public PlayingField PlayingField { get; set; }
     public Character Player { get; set; }
     public Dictionary<(int h, int w), Enemy> Enemies { get; set; } = new();
 
@@ -14,7 +14,7 @@ public class GameState
     {
         Enemies[(enemy.hpos, enemy.wpos)] = enemy;
     }
-    
+
     public void MoveEnemy(Enemy enemy, int newH, int newW)
     {
         Enemies.Remove((enemy.hpos, enemy.wpos));
@@ -23,9 +23,9 @@ public class GameState
         Enemies[(newH, newW)] = enemy;
     }
 
-    public GameState(World world, Character player)
+    public GameState(World.PlayingField playingField, Character player)
     {
-        World = world;
+        PlayingField = playingField;
         Player = player;
     }
 }

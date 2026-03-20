@@ -1,9 +1,9 @@
-﻿using System.Runtime.CompilerServices;
-using Shadow_Frenzy.Characters;
+﻿using Shadow_Frenzy.Characters;
 using Shadow_Frenzy.Enemies;
 using Shadow_Frenzy.Game;
+using Shadow_Frenzy.Items;
 
-namespace Shadow_Frenzy.WorldGeneration;
+namespace Shadow_Frenzy.World;
 
 public static class VisualHelper
 {
@@ -42,9 +42,9 @@ public static class VisualHelper
 
     public static void ShowBoard(GameState game)
     {
-        for (int h = 0; h < game.World.Height; h++)
+        for (int h = 0; h < game.PlayingField.Height; h++)
         {
-            for (int w = 0; w < game.World.Width; w++)
+            for (int w = 0; w < game.PlayingField.Width; w++)
             {
                 if (h == game.Player.hpos && w == game.Player.wpos)
                     Console.Write("P");
@@ -77,14 +77,16 @@ public static class VisualHelper
             {
                 case ConsoleKey.D1:
                     // Player attacks enemy
-                    enemy.Health -= player.Damage;
-                    Console.WriteLine($"You dealt {player.Damage} damage to {enemy.Name}!");
+                    int damageDealt = Math.Max(0, player.Damage - enemy.Armor);
+                    enemy.Health -= damageDealt;
+                    Console.WriteLine($"You dealt {damageDealt} damage to {enemy.Name}!");
 
                     // Enemy attacks back
                     if (enemy.Health > 0)
                     {
-                        player.Health -= enemy.Damage;
-                        Console.WriteLine($"{enemy.Name} dealt {enemy.Damage} damage to you!");
+                        int damageTaken = Math.Max(0, enemy.Damage - player.Armor);
+                        player.Health -= damageTaken;
+                        Console.WriteLine($"{enemy.Name} dealt {damageTaken} damage to you!");
                     }
 
                     break;
@@ -98,16 +100,23 @@ public static class VisualHelper
                     }
                     else
                     {
-                        int reduced = enemy.Damage / 2;
+                        int reduced = Math.Max(0, enemy.Damage - player.Armor) / 2;
                         player.Health -= reduced;
+                        if (reduced == 0)
+                        {
+                            Console.WriteLine("You fully blocked the attack!");
+                        }
+
                         Console.WriteLine($"You partially blocked, taking {reduced} damage!");
                     }
 
                     break;
 
                 default:
-                    Console.WriteLine("Invalid input, you hesitated and got hit!");
-                    player.Health -= enemy.Damage;
+                    int hesitationDamageTaken = Math.Max(0, enemy.Damage - player.Armor) * 2;
+                    Console.WriteLine(
+                        $"Invalid input, you hesitated and got hit for:{hesitationDamageTaken} by: {enemy.Name}!");
+                    player.Health -= hesitationDamageTaken;
                     break;
             }
         }
@@ -118,7 +127,7 @@ public static class VisualHelper
             game.Enemies.Remove((enemy.hpos, enemy.wpos));
             //Chance to drop loot (20%)
             bool loot = _random.Next(0, 5) == 0;
-            if (true)
+            if (loot)
             {
                 GameStateHelper.GenerateItem(game);
             }
@@ -128,101 +137,147 @@ public static class VisualHelper
     }
 
     public static void ShowInventory(GameState game)
-{
-    int selected = 0;
-    bool detailView = false;
-
-    while (true)
     {
-        Console.Clear();
-        const int width = 40;
-        string line = new string('═', width);
-        var inventory = game.Player.Inventory;
+        int selected = 0;
+        bool detailView = false;
 
-        Console.ForegroundColor = ConsoleColor.White;
-        Console.WriteLine($"╔{line}╗");
-        PrintRow("  INVENTORY");
-        Console.WriteLine($"╠{line}╣");
-        PrintRow($"  {game.Player.Name}");
-        PrintRow($"  HP: {game.Player.Health}");
-        Console.WriteLine($"╠{line}╣");
-
-        if (inventory.Count == 0)
+        while (true)
         {
-            PrintRow("  No items in inventory");
-        }
-        else if (detailView)
-        {
-            // Detail view for selected item
-            var item = inventory[selected];
-            ConsoleColor color = GetRarityColor(item.Rarity);
-            bool isEquipped = game.Player.Equipped.TryGetValue(item.Type, out Item? eq) && eq == item;
+            Console.Clear();
+            const int width = 40;
+            string line = new string('═', width);
+            var inventory = game.Player.Inventory;
 
-            Console.WriteLine($"╠{line}╣");
-            PrintRow($"  {item.Name}", color: color);
-            PrintRow($"  Type:   {item.Type}", color: color);
-            PrintRow($"  Rarity: {item.Rarity}", color: color);
-            if (item.Damage > 0) PrintRow($"  Damage: {item.Damage}", color: color);
-            if (item.Armor > 0)  PrintRow($"  Armor:  {item.Armor}", color: color);
             Console.ForegroundColor = ConsoleColor.White;
+            Console.WriteLine($"╔{line}╗");
+            PrintRow("  INVENTORY");
             Console.WriteLine($"╠{line}╣");
-            PrintRow(isEquipped ? "  [EQUIPPED]" : "  Press E to equip",
-                color: isEquipped ? ConsoleColor.Green : ConsoleColor.White);
-            PrintRow("  Press LEFT to go back");
-        }
-        else
-        {
-            // List view
-            for (int i = 0; i < inventory.Count; i++)
+            PrintRow($"  {game.Player.Name}");
+            PrintRow($"  HP: {game.Player.Health}");
+            PrintRow($"  DAMAGE: {game.Player.Damage}");
+            PrintRow($"  ARMOR: {game.Player.Armor}");
+            Console.WriteLine($"╠{line}╣");
+
+            if (inventory.Count == 0)
             {
-                var item = inventory[i];
-                bool isEquipped = game.Player.Equipped.TryGetValue(item.Type, out Item? eq) && eq == item;
+                PrintRow("  No items in inventory");
+            }
+            else if (detailView)
+            {
+                // Detail view for selected item
+                var item = inventory[selected];
                 ConsoleColor color = GetRarityColor(item.Rarity);
-                string prefix = i == selected ? "> " : "  ";
-                string equippedTag = isEquipped ? " [E]" : "";
-                PrintRow($"{prefix}{item.Name}{equippedTag}", color: color);
+                bool isEquipped = game.Player.Equipped.TryGetValue(item.Type, out Item? eq) && eq == item;
+
+                Console.WriteLine($"╠{line}╣");
+                PrintRow($"  {item.Name}", color: color);
+                PrintRow($"  Type:   {item.Type}", color: color);
+                PrintRow($"  Rarity: {item.Rarity}", color: color);
+                if (item.Damage > 0) PrintRow($"  Damage: {item.Damage}", color: color);
+                if (item.Health > 0) PrintRow($"  Health: {item.Health}", color: color);
+                if (item.Armor > 0) PrintRow($"  Armor:  {item.Armor}", color: color);
                 Console.ForegroundColor = ConsoleColor.White;
                 Console.WriteLine($"╠{line}╣");
+                PrintRow(isEquipped ? "  [EQUIPPED]" : "  Press E to equip",
+                    color: isEquipped ? ConsoleColor.Green : ConsoleColor.White);
+                PrintRow("  Press LEFT to go back");
+            }
+            else
+            {
+                // List view
+                for (int i = 0; i < inventory.Count; i++)
+                {
+                    var item = inventory[i];
+                    bool isEquipped = game.Player.Equipped.TryGetValue(item.Type, out Item? eq) && eq == item;
+                    ConsoleColor color = GetRarityColor(item.Rarity);
+                    string prefix = i == selected ? "> " : "  ";
+                    string equippedTag = isEquipped ? " [E]" : "";
+                    PrintRow($"{prefix}{item.Name}{equippedTag}", color: color);
+                    Console.ForegroundColor = ConsoleColor.White;
+                    Console.WriteLine($"╠{line}╣");
+                }
+
+                PrintRow("  UP/DOWN to navigate, RIGHT for details");
             }
 
-            PrintRow("  UP/DOWN to navigate, RIGHT for details");
-        }
+            Console.WriteLine($"╚{line}╝");
+            Console.ResetColor();
 
-        Console.WriteLine($"╚{line}╝");
-        Console.ResetColor();
+            // Input
+            ConsoleKey key = Console.ReadKey(intercept: true).Key;
 
-        // Input
-        ConsoleKey key = Console.ReadKey(intercept: true).Key;
+            switch (key)
+            {
+                case ConsoleKey.UpArrow:
+                    if (!detailView && selected > 0) selected--;
+                    break;
+                case ConsoleKey.DownArrow:
+                    if (!detailView && selected < inventory.Count - 1) selected++;
+                    break;
+                case ConsoleKey.RightArrow:
+                    if (inventory.Count > 0) detailView = true;
+                    break;
+                case ConsoleKey.LeftArrow:
+                    if (!detailView)
+                    {
+                        return;
+                    }
 
-        switch (key)
-        {
-            case ConsoleKey.UpArrow:
-                if (!detailView && selected > 0) selected--;
-                break;
-            case ConsoleKey.DownArrow:
-                if (!detailView && selected < inventory.Count - 1) selected++;
-                break;
-            case ConsoleKey.RightArrow:
-                if (inventory.Count > 0) detailView = true;
-                break;
-            case ConsoleKey.LeftArrow:
-                detailView = false;
-                break;
-            case ConsoleKey.E:
-                if (detailView)
-                {
-                    var item = inventory[selected];
-                    bool success = game.Player.Equip(item);
-                    PrintRow(success ? "  Equipped!" : "  Slot already taken!", 
-                        color: success ? ConsoleColor.Green : ConsoleColor.Red);
-                    Thread.Sleep(800);
-                }
-                break;
-            case ConsoleKey.Escape:
-                return;
+                    detailView = false;
+                    break;
+                case ConsoleKey.E:
+                    if (detailView)
+                    {
+                        var item = inventory[selected];
+                        bool alreadyEquipped = game.Player.Equipped.TryGetValue(item.Type, out Item? currentItem) &&
+                                               currentItem == item;
+
+                        if (alreadyEquipped)
+                        {
+                            PrintRow("  Already equipped!", color: ConsoleColor.Yellow);
+                            Thread.Sleep(800);
+                        }
+                        else if (game.Player.Equipped.ContainsKey(item.Type) ||
+                                 (game.Player.Equipped.Keys.Any(k => k.IsWeapon()) && item.Type.IsWeapon()))
+                        {
+                            // Something else is in this slot, ask to switch
+                            Console.Clear();
+
+                            Console.WriteLine($"╔{line}╗");
+                            PrintRow("  SWITCH ITEM?");
+                            Console.WriteLine($"╠{line}╣");
+                            PrintRow(
+                                $"  Current: {game.Player.Equipped[game.Player.Equipped.Keys.First(k => k.IsWeapon())].Name}",
+                                color: GetRarityColor(game.Player
+                                    .Equipped[game.Player.Equipped.Keys.First(k => k.IsWeapon())].Rarity));
+                            PrintRow($"  New:     {item.Name}",
+                                color: GetRarityColor(item.Rarity));
+                            Console.WriteLine($"╠{line}╣");
+                            PrintRow("  Y to confirm, any key to cancel");
+                            Console.WriteLine($"╚{line}╝");
+
+                            ConsoleKey confirm = Console.ReadKey(intercept: true).Key;
+                            if (confirm == ConsoleKey.Y)
+                            {
+                                game.Player.SwitchEquipped(item);
+                                PrintRow("  Item switched!", color: ConsoleColor.Green);
+                                Thread.Sleep(800);
+                            }
+                        }
+                        else
+                        {
+                            game.Player.Equip(item);
+                            PrintRow("  Equipped!", color: ConsoleColor.Green);
+                            Thread.Sleep(800);
+                        }
+                    }
+
+                    break;
+                case ConsoleKey.Escape:
+                    return;
+            }
         }
     }
-}
 
     public static void ShowNewItem(Item item)
     {

@@ -1,8 +1,9 @@
 ﻿using Shadow_Frenzy.Characters;
 using Shadow_Frenzy.Enemies;
 using Shadow_Frenzy.Game;
+using Shadow_Frenzy.Items;
 
-namespace Shadow_Frenzy.WorldGeneration;
+namespace Shadow_Frenzy.World;
 
 public static class GameStateHelper
 {
@@ -10,17 +11,22 @@ public static class GameStateHelper
 
     public static GameState StartNewGame()
     {
-        World world = new World(20, 20);
+        PlayingField playingField = new PlayingField(20, 20);
 
         string name = VisualHelper.GetPlayerName();
-        Character player = new Character(name, world.Height, world.Width);
+        Character player = new Character(name, playingField.Height, playingField.Width);
         player.Inventory.Add(new Item("Test Sword", "test", Rarity.Divine, ItemType.Sword));
+        player.Inventory.Add(new Item("Test Pickaxe", "test", Rarity.Divine, ItemType.Pickaxe));
+        player.Inventory.Add(new Item("Test Helmet", "test", Rarity.Divine, ItemType.Helmet));
+        player.Inventory.Add(new Item("Super Helmet", "test", Rarity.Divine, ItemType.Helmet));
+        player.Inventory.Add(new Item("Test Chestplate", "test", Rarity.Divine, ItemType.Chestplate));
+        player.Inventory.Add(new Item("Super Chestplate", "test", Rarity.Divine, ItemType.Chestplate));
 
-        Goblin een = new Goblin(20, "een", 5, world.Width, world.Height);
-        Goblin twee = new Goblin(20, "twee", 5, world.Width, world.Height);
-        Goblin drie = new Goblin(20, "drie", 5, world.Width, world.Height);
+        Goblin een = new Goblin(20, "een", 5, 3, playingField.Width, playingField.Height);
+        Goblin twee = new Goblin(20, "twee", 5, 2, playingField.Width, playingField.Height);
+        Goblin drie = new Goblin(20, "drie", 5, 0, playingField.Width, playingField.Height);
 
-        GameState game = new GameState(world, player);
+        GameState game = new GameState(playingField, player);
         game.AddEnemy(een);
         game.AddEnemy(twee);
         game.AddEnemy(drie);
@@ -38,13 +44,13 @@ public static class GameStateHelper
                 if (gameState.Player.hpos > 0) gameState.Player.hpos--;
                 break;
             case ConsoleKey.S or ConsoleKey.DownArrow:
-                if (gameState.Player.hpos < gameState.World.Height - 1) gameState.Player.hpos++;
+                if (gameState.Player.hpos < gameState.PlayingField.Height - 1) gameState.Player.hpos++;
                 break;
             case ConsoleKey.Q or ConsoleKey.LeftArrow:
                 if (gameState.Player.wpos > 0) gameState.Player.wpos--;
                 break;
             case ConsoleKey.D or ConsoleKey.RightArrow:
-                if (gameState.Player.wpos < gameState.World.Width - 1) gameState.Player.wpos++;
+                if (gameState.Player.wpos < gameState.PlayingField.Width - 1) gameState.Player.wpos++;
                 break;
             case ConsoleKey.Escape:
                 return;
@@ -56,22 +62,23 @@ public static class GameStateHelper
 
     public static void GoblinMovement(GameState game)
     {
-        var enemiesToMove = game.Enemies.ToList();
-        foreach (var pair in enemiesToMove)
+        //Get random amount of enemies to move. (TODO: needs tweaking for amount of enemeies)
+        var enemiesToMove = game.Enemies.Values
+            .OrderBy(_ => _random.Next())
+            .Take(_random.Next(1, game.Enemies.Count + 1))
+            .ToList();
+
+        foreach (var enemy in enemiesToMove)
         {
-            var enemy = pair.Value;
             int newH = enemy.hpos;
             int newW = enemy.wpos;
 
-            // Move vertically towards player
             if (enemy.hpos < game.Player.hpos) newH++;
             else if (enemy.hpos > game.Player.hpos) newH--;
 
-            // Move horizontally towards player
             if (enemy.wpos < game.Player.wpos) newW++;
             else if (enemy.wpos > game.Player.wpos) newW--;
 
-            // Only move if tile is not occupied
             if (!game.Enemies.ContainsKey((newH, newW)))
                 game.MoveEnemy(enemy, newH, newW);
         }
