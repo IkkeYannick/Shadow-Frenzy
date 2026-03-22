@@ -28,13 +28,13 @@ public static class GameStateHelper
 
         switch (key)
         {
-            case ConsoleKey.Z or ConsoleKey.UpArrow:
+            case ConsoleKey.Z or ConsoleKey.W or ConsoleKey.UpArrow:
                 if (gameState.Player.Y > 0) gameState.Player.Y--;
                 break;
             case ConsoleKey.S or ConsoleKey.DownArrow:
                 if (gameState.Player.Y < gameState.PlayingField.Height - 1) gameState.Player.Y++;
                 break;
-            case ConsoleKey.Q or ConsoleKey.LeftArrow:
+            case ConsoleKey.Q or ConsoleKey.A or ConsoleKey.LeftArrow:
                 if (gameState.Player.X > 0) gameState.Player.X--;
                 break;
             case ConsoleKey.D or ConsoleKey.RightArrow:
@@ -243,7 +243,7 @@ public static class GameStateHelper
     {
         // Scale enemy count and stats with difficulty
         int difficultyMultiplier = (int)game.Difficulty + 1;
-        int enemyCount = 1; //2 + difficultyMultiplier;
+        int enemyCount = 2 + difficultyMultiplier;
         int enemyHealth = (int)7.5 * difficultyMultiplier;
         int enemyDamage = (int)1.25 * difficultyMultiplier;
         int enemyArmor = (int)1.25 * difficultyMultiplier;

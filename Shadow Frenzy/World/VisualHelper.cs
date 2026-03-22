@@ -260,7 +260,7 @@ public static class VisualHelper
                     }
 
                     break;
-                case ConsoleKey.Escape:
+                case ConsoleKey.Escape or ConsoleKey.Tab:
                     return;
             }
         }
