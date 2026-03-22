@@ -3,7 +3,7 @@ using Shadow_Frenzy.World;
 
 
 GameState game = GameStateHelper.StartNewGame();
-VisualHelper.ShowPlayerInfo(game.Player);
+VisualHelper.ShowPlayerInfo(game.Player,start : true);
 VisualHelper.WaitForStart();
 while (true)
 {

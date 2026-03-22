@@ -6,6 +6,10 @@ public class Character
 {
     public string Name { get; set; }
     public int Health { get; set; }
+    public int Mana { get; set; }
+    public int MaxHealth { get; set; }
+    
+    public int MaxMana { get; set; }
     public int Damage { get; set; }
     public int Armor { get; set; }
     public List<Item> Inventory { get; set; }
@@ -16,7 +20,10 @@ public class Character
 
     public Character(string name, int x, int y)
     {
+        MaxHealth = 100;
+        MaxMana = 100;
         Health = 100;
+        Mana = 100;
         Armor = 0;
         Name = name;
         Damage = 10;

@@ -273,4 +273,24 @@ public static class GameStateHelper
     {
         game.Player.Equip(item);
     }
+
+    public static int UsePotion(Character player,Item potionItem = null)
+    {
+        if (player.Inventory.Count(x => x.Type == ItemType.Potion) == 0)
+        {
+            return 0;
+        }
+
+        if (potionItem.Type != ItemType.Potion && potionItem == null)
+        {
+            
+        }
+
+        int healAmount = _random.Next(8, 15);
+        if (player.Health + healAmount > player.MaxHealth)
+            player.Health = player.MaxHealth;
+
+        player.Health += healAmount;
+        return healAmount;
+    }
 }

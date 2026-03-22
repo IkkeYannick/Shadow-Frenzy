@@ -22,14 +22,40 @@ public static class VisualHelper
         return name;
     }
 
-    public static void ShowPlayerInfo(Character player)
+    public static void ShowPlayerInfo(Character player, int Width = 40, bool start = false)
     {
-        Console.WriteLine($"""
-                           Your character: {player.Name}
-                           HP: {player.Health}
-                           Damage: {player.Damage}
-                           """);
+        string line = new string('═', Width);
+        if (start)
+        {
+            Console.WriteLine($"╔{line}╗");
+        }
+
+        PrintRow($"Your character: {player.Name}");
+
+        int HealthBarLength = 20; // Length of the Healthbar in Number
+        int ManaBarLength = 20; // Length of the Manabar in Number
+        int filled = (int)((float)player.Health / player.MaxHealth * HealthBarLength);
+        int Manafilled = (int)((float)player.Mana / player.MaxMana * ManaBarLength);
+        int empty = HealthBarLength - filled;
+        string bar = "[" + new string('█', filled) + new string('░', empty) + "]";
+        string manabar = "[" + new string('█', Manafilled) + new string('░', ManaBarLength - Manafilled) + "]";
+        if ((float)player.Health / player.MaxHealth > 0.5f)
+            PrintRow($"Health: {bar}", color: ConsoleColor.Green);
+        else if ((float)player.Health / player.MaxHealth > 0.25f)
+            PrintRow($"Health: {bar}", color: ConsoleColor.Yellow);
+        else
+            PrintRow($"Health: {bar}", color: ConsoleColor.Red);
+        Console.ResetColor();
+        PrintRow($"Mana: {manabar} {player.Mana} /{player.MaxMana}", color: ConsoleColor.Cyan);
+        Console.ResetColor();
+        PrintRow($"Damage: {player.Damage}");
+        Console.ResetColor();
+        if (start)
+        {
+            Console.WriteLine($"╚{line}╝");
+        }
     }
+
 
     public static void WaitForStart()
     {
@@ -60,18 +86,21 @@ public static class VisualHelper
         }
     }
 
-    public static void ShowCombat(Enemy enemy, Character player, GameState game)
+    public static void ShowCombat(Enemy enemy, Character player, GameState game, int width = 40)
     {
+        string line = new string('═', width);
         Console.WriteLine($"You ran into a: {enemy.Name}!");
 
         while (enemy.Health > 0 && player.Health > 0)
         {
-            Console.WriteLine("============================");
-            Console.WriteLine($"{enemy.Name} HP: {enemy.Health}");
-            Console.WriteLine($"Your HP: {player.Health}");
-            Console.WriteLine("============================");
-            Console.WriteLine("1. Attack");
-            Console.WriteLine("2. Block");
+            Console.WriteLine($"╔{line}╗");
+            Console.WriteLine($"{enemy.Name} HP: {enemy.Health}\n");
+            ShowPlayerInfo(player);
+            Console.WriteLine($"╠{line}╣");
+            PrintRow("1. Attack");
+            PrintRow("2. Block");
+            PrintRow($"3. Use potion {player.Inventory.Count(x => x.Type == ItemType.Potion)}/5");
+            Console.WriteLine($"╚{line}╝");
 
             ConsoleKey key = Console.ReadKey(intercept: true).Key;
 
@@ -101,6 +130,22 @@ public static class VisualHelper
                     }
 
                     Console.WriteLine($"You partially blocked, taking {blockedDamageTaken} damage!");
+                    break;
+                case ConsoleKey.D3:
+                    // Heal: Heal for a maximum of 15 health
+                    int healAmount = GameStateHelper.UsePotion(player);
+                    if (healAmount == 0)
+                    {
+                        Console.WriteLine("You dont have anymore healing potions!");
+                    }
+
+                    Console.WriteLine($"You used a healing potion it healed you for: {healAmount}");
+                    if (enemy.Health > 0)
+                    {
+                        int damageTaken = GameStateHelper.EnemyAttack(enemy, player);
+                        Console.WriteLine($"{enemy.Name} dealt {damageTaken} damage to you!");
+                    }
+
                     break;
 
                 default:
@@ -139,10 +184,7 @@ public static class VisualHelper
             Console.WriteLine($"╔{line}╗");
             PrintRow("  INVENTORY");
             Console.WriteLine($"╠{line}╣");
-            PrintRow($"  {game.Player.Name}");
-            PrintRow($"  HP: {game.Player.Health}");
-            PrintRow($"  DAMAGE: {game.Player.Damage}");
-            PrintRow($"  ARMOR: {game.Player.Armor}");
+            ShowPlayerInfo(game.Player);
             Console.WriteLine($"╠{line}╣");
 
             if (inventory.Count == 0)
@@ -339,8 +381,11 @@ public static class VisualHelper
 
     private static void PrintRow(string text, int width = 40, ConsoleColor color = ConsoleColor.White)
     {
-        Console.ForegroundColor = color;
         string padded = text.Length > width ? text[..width] : text.PadRight(width);
-        Console.WriteLine($"║{padded}║");
+        Console.Write("║");
+        Console.ForegroundColor = color;
+        Console.Write(padded);
+        Console.ResetColor();
+        Console.WriteLine("║");
     }
 }
