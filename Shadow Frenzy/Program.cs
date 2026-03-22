@@ -13,11 +13,9 @@ while (true)
         VisualHelper.ShowBoard(game);
         GameStateHelper.GetMovement(game);
         GameStateHelper.GoblinMovement(game);
-        GameStateHelper.checkCombat(game);
+        GameStateHelper.CheckCombat(game);
+        GameStateHelper.UpdateDifficulty(game);
     }
-
-    Console.WriteLine("You died!");
-    Console.WriteLine("Press R to restart or any other key to exit.");
     ConsoleKey key = Console.ReadKey(intercept: true).Key;
     if (key == ConsoleKey.R)
     {

@@ -10,18 +10,18 @@ public class Character
     public int Armor { get; set; }
     public List<Item> Inventory { get; set; }
     public Dictionary<ItemType, Item> Equipped { get; set; } = new();
-    public int wpos { get; set; }
-    public int hpos { get; set; }
+    public int X { get; set; }
+    public int Y { get; set; }
 
 
-    public Character(string name, int wpos, int hpos)
+    public Character(string name, int x, int y)
     {
         Health = 100;
         Armor = 0;
         Name = name;
         Damage = 10;
         Inventory = new List<Item>();
-        (this.wpos, this.hpos) = (wpos / 2, hpos / 2);
+        (X, Y) = (x / 2, y / 2);
     }
 
     public void Equip(Item item)
@@ -32,7 +32,13 @@ public class Character
         Equipped[item.Type] = item;
         if (item.Type.IsWeapon())
         {
-            Damage = Math.Min(Damage + item.Damage, item.MaxDamage);
+            int damage = Math.Min(Damage + item.Damage, item.MaxDamage);
+            Damage = damage;
+            if (Damage < 10)
+            {
+                Damage = 10;
+            }
+
             return;
         }
 

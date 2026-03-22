@@ -8,15 +8,16 @@ public class Goblin : Enemy
     public int Health { get; set; }
     public int Damage { get; set; }
     public int Armor { get; set; }
-    public int wpos { get; set; }
-    public int hpos { get; set; }
+    public int X { get; set; }
+    public int Y { get; set; }
 
-    public Goblin(int health, string name, int damage, int armor, int width, int height)
+    public Goblin(int health, string name, int damage, int armor, int x, int y, int playerY,
+        int playerX)
     {
         Health = health;
         Name = name;
         Damage = damage;
         Armor = armor;
-        (hpos, wpos) = SpawnHelper.GetEnemySpawnTile(height, width);
+        (Y, X) = SpawnHelper.GetEnemySpawnTile(y, x, playerY, playerX);
     }
 }

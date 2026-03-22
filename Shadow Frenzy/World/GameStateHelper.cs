@@ -1,4 +1,5 @@
-﻿using Shadow_Frenzy.Characters;
+﻿using System.Runtime.CompilerServices;
+using Shadow_Frenzy.Characters;
 using Shadow_Frenzy.Enemies;
 using Shadow_Frenzy.Game;
 using Shadow_Frenzy.Items;
@@ -7,7 +8,7 @@ namespace Shadow_Frenzy.World;
 
 public static class GameStateHelper
 {
-    public static Random _random = new();
+    private static Random _random = new();
 
     public static GameState StartNewGame()
     {
@@ -15,42 +16,29 @@ public static class GameStateHelper
 
         string name = VisualHelper.GetPlayerName();
         Character player = new Character(name, playingField.Height, playingField.Width);
-        player.Inventory.Add(new Item("Test Sword", "test", Rarity.Divine, ItemType.Sword));
-        player.Inventory.Add(new Item("Test Pickaxe", "test", Rarity.Divine, ItemType.Pickaxe));
-        player.Inventory.Add(new Item("Test Helmet", "test", Rarity.Divine, ItemType.Helmet));
-        player.Inventory.Add(new Item("Super Helmet", "test", Rarity.Divine, ItemType.Helmet));
-        player.Inventory.Add(new Item("Test Chestplate", "test", Rarity.Divine, ItemType.Chestplate));
-        player.Inventory.Add(new Item("Super Chestplate", "test", Rarity.Divine, ItemType.Chestplate));
-
-        Goblin een = new Goblin(20, "een", 5, 3, playingField.Width, playingField.Height);
-        Goblin twee = new Goblin(20, "twee", 5, 2, playingField.Width, playingField.Height);
-        Goblin drie = new Goblin(20, "drie", 5, 0, playingField.Width, playingField.Height);
-
         GameState game = new GameState(playingField, player);
-        game.AddEnemy(een);
-        game.AddEnemy(twee);
-        game.AddEnemy(drie);
-
+        SpawnEnemies(game);
         return game;
     }
 
     public static void GetMovement(GameState gameState)
     {
+        gameState.IncreaseDay();
         ConsoleKey key = Console.ReadKey(intercept: true).Key;
 
         switch (key)
         {
             case ConsoleKey.Z or ConsoleKey.UpArrow:
-                if (gameState.Player.hpos > 0) gameState.Player.hpos--;
+                if (gameState.Player.Y > 0) gameState.Player.Y--;
                 break;
             case ConsoleKey.S or ConsoleKey.DownArrow:
-                if (gameState.Player.hpos < gameState.PlayingField.Height - 1) gameState.Player.hpos++;
+                if (gameState.Player.Y < gameState.PlayingField.Height - 1) gameState.Player.Y++;
                 break;
             case ConsoleKey.Q or ConsoleKey.LeftArrow:
-                if (gameState.Player.wpos > 0) gameState.Player.wpos--;
+                if (gameState.Player.X > 0) gameState.Player.X--;
                 break;
             case ConsoleKey.D or ConsoleKey.RightArrow:
-                if (gameState.Player.wpos < gameState.PlayingField.Width - 1) gameState.Player.wpos++;
+                if (gameState.Player.X < gameState.PlayingField.Width - 1) gameState.Player.X++;
                 break;
             case ConsoleKey.Escape:
                 return;
@@ -70,28 +58,28 @@ public static class GameStateHelper
 
         foreach (var enemy in enemiesToMove)
         {
-            int newH = enemy.hpos;
-            int newW = enemy.wpos;
+            int newH = enemy.Y;
+            int newW = enemy.X;
 
-            if (enemy.hpos < game.Player.hpos) newH++;
-            else if (enemy.hpos > game.Player.hpos) newH--;
+            if (enemy.Y < game.Player.Y) newH++;
+            else if (enemy.Y > game.Player.Y) newH--;
 
-            if (enemy.wpos < game.Player.wpos) newW++;
-            else if (enemy.wpos > game.Player.wpos) newW--;
+            if (enemy.X < game.Player.X) newW++;
+            else if (enemy.X > game.Player.X) newW--;
 
             if (!game.Enemies.ContainsKey((newH, newW)))
                 game.MoveEnemy(enemy, newH, newW);
         }
     }
 
-    public static void checkCombat(GameState game)
+    public static void CheckCombat(GameState game)
     {
         foreach (var pair in game.Enemies)
         {
             var enemy = pair.Value;
 
-            int hDiff = Math.Abs(enemy.hpos - game.Player.hpos);
-            int wDiff = Math.Abs(enemy.wpos - game.Player.wpos);
+            int hDiff = Math.Abs(enemy.Y - game.Player.Y);
+            int wDiff = Math.Abs(enemy.X - game.Player.X);
 
             if (hDiff <= 1 && wDiff <= 1)
                 VisualHelper.ShowCombat(enemy, game.Player, game);
@@ -180,5 +168,109 @@ public static class GameStateHelper
             Rarity.Divine => $"Divine {prefix} {type} {suffix}", // "Divine Ancient Chestplate of the Ancients"
             _ => $"{prefix} {type}"
         };
+    }
+
+    public static int BlockAttempt(Enemy enemy, Character player)
+    {
+        bool blocked = _random.Next(0, 2) == 0;
+        if (blocked)
+        {
+            return 0;
+        }
+        else
+        {
+            int reduced = Math.Max(0, enemy.Damage - player.Armor) / 2;
+            player.Health -= reduced;
+            if (reduced == 0)
+            {
+                return 0;
+            }
+
+            return reduced;
+        }
+    }
+
+    public static int AttackEnemy(Enemy enemy, Character player)
+    {
+        int damageDealt = Math.Max(0, player.Damage - enemy.Armor);
+        enemy.Health -= damageDealt;
+        return damageDealt;
+    }
+
+    public static int EnemyAttack(Enemy enemy, Character player)
+    {
+        int damageTaken = Math.Max(0, enemy.Damage - player.Armor);
+        player.Health -= damageTaken;
+        return damageTaken;
+    }
+
+    public static int Hesitate(Enemy enemy, Character player)
+    {
+        int hesitationDamageTaken = Math.Max(0, enemy.Damage - player.Armor) * 2;
+        player.Health -= hesitationDamageTaken;
+        return hesitationDamageTaken;
+    }
+
+    public static void DefeatEnemy(GameState game, Enemy enemy)
+    {
+        game.Enemies.Remove((enemy.Y, enemy.X));
+        //Chance to drop loot (20%)
+        bool loot = _random.Next(0, 5) == 0;
+        if (loot)
+        {
+            GenerateItem(game);
+        }
+    }
+
+    public static void UpdateDifficulty(GameState game)
+    {
+        if (game.Enemies.Count != 0) return;
+
+        int max = Enum.GetValues(typeof(Difficulty)).Length - 1;
+        int nextDifficultyIndex = (int)game.Difficulty + 1;
+
+        if (nextDifficultyIndex <= max)
+        {
+            Difficulty nextDifficulty = (Difficulty)nextDifficultyIndex;
+            if (game.Day >= nextDifficulty.DayThreshold())
+                game.IncreaseDifficulty();
+        }
+
+        SpawnEnemies(game);
+    }
+
+    public static void SpawnEnemies(GameState game)
+    {
+        // Scale enemy count and stats with difficulty
+        int difficultyMultiplier = (int)game.Difficulty + 1;
+        int enemyCount = 1; //2 + difficultyMultiplier;
+        int enemyHealth = (int)7.5 * difficultyMultiplier;
+        int enemyDamage = (int)1.25 * difficultyMultiplier;
+        int enemyArmor = (int)1.25 * difficultyMultiplier;
+
+        for (int i = 0; i < enemyCount; i++)
+        {
+            var goblin = new Goblin(
+                health: enemyHealth,
+                name: $"Goblin_{game.Day}_{i}",
+                armor: enemyArmor,
+                damage: enemyDamage,
+                x: game.PlayingField.Width,
+                y: game.PlayingField.Height,
+                playerY: game.Player.Y,
+                playerX: game.Player.X
+            );
+            game.AddEnemy(goblin);
+        }
+    }
+
+    public static void SwitchEquipped(GameState game, Item item)
+    {
+        game.Player.SwitchEquipped(item);
+    }
+
+    public static void EquipItem(GameState game, Item item)
+    {
+        game.Player.Equip(item);
     }
 }

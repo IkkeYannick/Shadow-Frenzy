@@ -7,9 +7,6 @@ namespace Shadow_Frenzy.World;
 
 public static class VisualHelper
 {
-    private static Random _random = new();
-
-
     public static string GetPlayerName()
     {
         Console.WriteLine("The game is starting");
@@ -42,16 +39,21 @@ public static class VisualHelper
 
     public static void ShowBoard(GameState game)
     {
+        string line = new string('═', game.PlayingField.Width - 2);
+        Console.WriteLine($"╔{line}╗");
+        PrintRow($"Day: {game.Day}", line.Length);
+        PrintRow($"Difficulty: {Enum.GetName(typeof(Difficulty), game.Difficulty)}", line.Length);
+        Console.WriteLine($"╚{line}╝");
         for (int h = 0; h < game.PlayingField.Height; h++)
         {
             for (int w = 0; w < game.PlayingField.Width; w++)
             {
-                if (h == game.Player.hpos && w == game.Player.wpos)
+                if (h == game.Player.Y && w == game.Player.X)
                     Console.Write("P");
                 else if (game.Enemies.ContainsKey((h, w)))
                     Console.Write("G");
                 else
-                    Console.Write("█");
+                    Console.Write(".");
             }
 
             Console.WriteLine();
@@ -77,15 +79,13 @@ public static class VisualHelper
             {
                 case ConsoleKey.D1:
                     // Player attacks enemy
-                    int damageDealt = Math.Max(0, player.Damage - enemy.Armor);
-                    enemy.Health -= damageDealt;
+                    int damageDealt = GameStateHelper.AttackEnemy(enemy, player);
                     Console.WriteLine($"You dealt {damageDealt} damage to {enemy.Name}!");
 
                     // Enemy attacks back
                     if (enemy.Health > 0)
                     {
-                        int damageTaken = Math.Max(0, enemy.Damage - player.Armor);
-                        player.Health -= damageTaken;
+                        int damageTaken = GameStateHelper.EnemyAttack(enemy, player);
                         Console.WriteLine($"{enemy.Name} dealt {damageTaken} damage to you!");
                     }
 
@@ -93,30 +93,20 @@ public static class VisualHelper
 
                 case ConsoleKey.D2:
                     // Block: 50% chance to fully block, otherwise take half damage
-                    bool blocked = _random.Next(0, 2) == 0;
-                    if (blocked)
+                    int blockedDamageTaken = GameStateHelper.BlockAttempt(enemy, player);
+                    if (blockedDamageTaken >= 0)
                     {
                         Console.WriteLine("You fully blocked the attack!");
-                    }
-                    else
-                    {
-                        int reduced = Math.Max(0, enemy.Damage - player.Armor) / 2;
-                        player.Health -= reduced;
-                        if (reduced == 0)
-                        {
-                            Console.WriteLine("You fully blocked the attack!");
-                        }
-
-                        Console.WriteLine($"You partially blocked, taking {reduced} damage!");
+                        break;
                     }
 
+                    Console.WriteLine($"You partially blocked, taking {blockedDamageTaken} damage!");
                     break;
 
                 default:
-                    int hesitationDamageTaken = Math.Max(0, enemy.Damage - player.Armor) * 2;
+                    int hesitationDamageTaken = GameStateHelper.Hesitate(enemy, player);
                     Console.WriteLine(
                         $"Invalid input, you hesitated and got hit for:{hesitationDamageTaken} by: {enemy.Name}!");
-                    player.Health -= hesitationDamageTaken;
                     break;
             }
         }
@@ -124,16 +114,13 @@ public static class VisualHelper
         if (enemy.Health <= 0)
         {
             Console.WriteLine($"You defeated {enemy.Name}!");
-            game.Enemies.Remove((enemy.hpos, enemy.wpos));
-            //Chance to drop loot (20%)
-            bool loot = _random.Next(0, 5) == 0;
-            if (loot)
-            {
-                GameStateHelper.GenerateItem(game);
-            }
+            GameStateHelper.DefeatEnemy(game, enemy);
         }
         else
+        {
             Console.WriteLine("You died!");
+            Console.WriteLine("Press R to restart or any other key to exit.");
+        }
     }
 
     public static void ShowInventory(GameState game)
@@ -259,14 +246,14 @@ public static class VisualHelper
                             ConsoleKey confirm = Console.ReadKey(intercept: true).Key;
                             if (confirm == ConsoleKey.Y)
                             {
-                                game.Player.SwitchEquipped(item);
+                                GameStateHelper.SwitchEquipped(game, item);
                                 PrintRow("  Item switched!", color: ConsoleColor.Green);
                                 Thread.Sleep(800);
                             }
                         }
                         else
                         {
-                            game.Player.Equip(item);
+                            GameStateHelper.EquipItem(game, item);
                             PrintRow("  Equipped!", color: ConsoleColor.Green);
                             Thread.Sleep(800);
                         }

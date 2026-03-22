@@ -2,26 +2,35 @@
 
 public static class SpawnHelper
 {
-    public static (int height, int width) GetEnemySpawnTile(int height, int width)
-    {
-        Random rnd = new Random();
-        int middleHeight = height / 2;
-        int middleWidth = width / 2;
-        int rndHeight = rnd.Next(1, height);
-        int rndWidth = rnd.Next(1, width);
+    private static Random _random = new();
 
-        while (rndHeight > middleHeight - 5 && rndHeight < middleHeight + 5
-               || rndWidth > middleWidth - 5 && rndWidth < middleWidth + 5)
+    public static (int height, int width) GetEnemySpawnTile(int height, int width, int playerHeight, int playerWidth)
+    {
+        int rndHeight = _random.Next(1, height);
+        int rndWidth = _random.Next(1, width);
+
+        while (IsTooCloseToCenter(rndHeight, rndWidth, height, width) ||
+               IsTooCloseToPlayer(rndHeight, rndWidth, playerHeight, playerWidth))
         {
-            rndHeight = rnd.Next(1, height);
-            rndWidth = rnd.Next(1, width);
+            rndHeight = _random.Next(1, height);
+            rndWidth = _random.Next(1, width);
         }
 
         return (rndHeight, rndWidth);
     }
 
-    public static (int height, int width) GetPlayerSpawnTile(int height, int width)
+    private static bool IsTooCloseToCenter(int h, int w, int height, int width)
     {
-        return (height/2, width/2);
+        int middleHeight = height / 2;
+        int middleWidth = width / 2;
+        return h > middleHeight - 5 && h < middleHeight + 5
+               || w > middleWidth - 5 && w < middleWidth + 5;
+    }
+
+    private static bool IsTooCloseToPlayer(int h, int w, int playerHeight, int playerWidth)
+    {
+        int hDiff = Math.Abs(h - playerHeight);
+        int wDiff = Math.Abs(w - playerWidth);
+        return hDiff <= 5 && wDiff <= 5;
     }
 }
