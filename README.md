@@ -60,6 +60,14 @@ Each tier raises enemy health, damage, and armor. A new wave spawns once all ene
 
 ---
 
+## World (Playing Field)
+
+The world is created by random noise that is smoothed out.
+It exists from Mountians, water, grass and trees(for now).
+We have walkable and none walkable tiles like Mountains and water tiles.
+The player and enemies cannot spawn on these.
+
+--- 
 ## Project Structure
 
 ```
@@ -80,7 +88,9 @@ Shadow Frenzy/
 │   ├── GameStateHelper.cs  # Game logic (movement, combat, spawning, loot)
 │   ├── PlayingField.cs     # Board dimensions
 │   ├── SpawnHelper.cs      # Enemy spawn positioning
-│   └── VisualHelper.cs     # All console rendering and UI
+│   ├── Tile.cs             # Tile struct
+│   ├── VisualHelper.cs     # All console rendering and UI
+│   └── WorldGenerator.cs   # Tile generation into a world(PlayingField)
 └── Program.cs              # Entry point and game loop
 ```
 
