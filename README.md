@@ -65,7 +65,7 @@ Each tier raises enemy health, damage, and armor. A new wave spawns once all ene
 The world is created by random noise that is smoothed out.
 It exists from Mountians, water, grass and trees(for now).
 We have walkable and none walkable tiles like Mountains and water tiles.
-The player and enemies cannot spawn on these.
+The player and enemies cannot spawn or walk on these tiles.
 
 --- 
 ## Project Structure
