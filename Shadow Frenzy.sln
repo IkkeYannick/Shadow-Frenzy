@@ -2,6 +2,8 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shadow Frenzy", "Shadow Frenzy\Shadow Frenzy.csproj", "{AD1BEBD2-C9A7-4D16-A4F0-197213C574EE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shadow Frenzy.Tests", "Shadow Frenzy.Tests\Shadow Frenzy.Tests.csproj", "{FE9952E6-E30B-49E8-93B6-364FA237FA25}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +14,9 @@ Global
 		{AD1BEBD2-C9A7-4D16-A4F0-197213C574EE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AD1BEBD2-C9A7-4D16-A4F0-197213C574EE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AD1BEBD2-C9A7-4D16-A4F0-197213C574EE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FE9952E6-E30B-49E8-93B6-364FA237FA25}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FE9952E6-E30B-49E8-93B6-364FA237FA25}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FE9952E6-E30B-49E8-93B6-364FA237FA25}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FE9952E6-E30B-49E8-93B6-364FA237FA25}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

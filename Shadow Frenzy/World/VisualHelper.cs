@@ -39,21 +39,42 @@ public static class VisualHelper
 
     public static void ShowBoard(GameState game)
     {
-        string line = new string('═', game.PlayingField.Width - 2);
+        string line = new string('═', game.PlayingField.ViewportWidth - 2);
         Console.WriteLine($"╔{line}╗");
         PrintRow($"Day: {game.Day}", line.Length);
         PrintRow($"Difficulty: {Enum.GetName(typeof(Difficulty), game.Difficulty)}", line.Length);
         Console.WriteLine($"╚{line}╝");
-        for (int h = 0; h < game.PlayingField.Height; h++)
+        var field = game.PlayingField;
+        var player = game.Player;
+
+        int camY = Math.Clamp(player.Y - field.ViewportHeight / 2, 0, field.Height - field.ViewportHeight);
+        int camX = Math.Clamp(player.X - field.ViewportWidth / 2, 0, field.Width - field.ViewportWidth);
+
+        for (int h = camY; h < camY + field.ViewportHeight; h++)
         {
-            for (int w = 0; w < game.PlayingField.Width; w++)
+            for (int w = camX; w < camX + field.ViewportWidth; w++)
             {
-                if (h == game.Player.Y && w == game.Player.X)
+                if (h == player.Y && w == player.X)
+                {
                     Console.Write("P");
+                }
                 else if (game.Enemies.ContainsKey((h, w)))
+                {
                     Console.Write("G");
+                }
                 else
-                    Console.Write(".");
+                {
+                    var tile = field.GetTile(h, w);
+                    Console.ForegroundColor = tile.Type switch
+                    {
+                        TileType.Water => ConsoleColor.Blue,
+                        TileType.Mountain => ConsoleColor.DarkGray,
+                        TileType.Tree => ConsoleColor.Green,
+                        _ => ConsoleColor.DarkGreen,
+                    };
+                    Console.Write(tile.Symbol);
+                    Console.ResetColor();
+                }
             }
 
             Console.WriteLine();
@@ -233,10 +254,21 @@ public static class VisualHelper
                             Console.WriteLine($"╔{line}╗");
                             PrintRow("  SWITCH ITEM?");
                             Console.WriteLine($"╠{line}╣");
-                            PrintRow(
-                                $"  Current: {game.Player.Equipped[game.Player.Equipped.Keys.First(k => k.IsWeapon())].Name}",
-                                color: GetRarityColor(game.Player
-                                    .Equipped[game.Player.Equipped.Keys.First(k => k.IsWeapon())].Rarity));
+                            if (!item.Type.IsWeapon())
+                            {
+                                PrintRow(
+                                    $"  Current: {game.Player.Equipped[item.Type].Name}",
+                                    color: GetRarityColor(game.Player
+                                        .Equipped[item.Type].Rarity));
+                            }
+                            else
+                            {
+                                PrintRow(
+                                    $"  Current: {game.Player.Equipped[game.Player.Equipped.Keys.First(k => k.IsWeapon())].Name}",
+                                    color: GetRarityColor(game.Player
+                                        .Equipped[game.Player.Equipped.Keys.First(k => k.IsWeapon())].Rarity));
+                            }
+
                             PrintRow($"  New:     {item.Name}",
                                 color: GetRarityColor(item.Rarity));
                             Console.WriteLine($"╠{line}╣");
@@ -251,6 +283,7 @@ public static class VisualHelper
                                 Thread.Sleep(800);
                             }
                         }
+
                         else
                         {
                             GameStateHelper.EquipItem(game, item);

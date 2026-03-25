@@ -12,7 +12,7 @@ while (true)
         Console.Clear();
         VisualHelper.ShowBoard(game);
         GameStateHelper.GetMovement(game);
-        GameStateHelper.GoblinMovement(game);
+        GameStateHelper.EnemyMovement(game);
         GameStateHelper.CheckCombat(game);
         GameStateHelper.UpdateDifficulty(game);
     }
