@@ -1,4 +1,4 @@
-﻿using Shadow_Frenzy.WorldGeneration;
+﻿using Shadow_Frenzy.World;
 
 namespace Shadow_Frenzy.Enemies;
 
@@ -11,13 +11,13 @@ public class Goblin : Enemy
     public int X { get; set; }
     public int Y { get; set; }
 
-    public Goblin(int health, string name, int damage, int armor, int x, int y, int playerY,
-        int playerX)
+    public Goblin(int health, string name, int damage, int armor, int x, int y)
     {
         Health = health;
         Name = name;
         Damage = damage;
         Armor = armor;
-        (Y, X) = SpawnHelper.GetEnemySpawnTile(y, x, playerY, playerX);
+        X = x;
+        Y = y;
     }
 }

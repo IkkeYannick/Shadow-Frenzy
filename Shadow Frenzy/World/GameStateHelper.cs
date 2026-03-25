@@ -12,45 +12,81 @@ public static class GameStateHelper
 
     public static GameState StartNewGame()
     {
-        PlayingField playingField = new PlayingField(20, 20);
+        PlayingField playingField = new PlayingField(2000, 2000, 60, 20);
 
         string name = VisualHelper.GetPlayerName();
         Character player = new Character(name, playingField.Height, playingField.Width);
+        player.Inventory.Add(new Item("Helmet of helms","test",Rarity.Common,ItemType.Helmet));
+        player.Inventory.Add(new Item("HELMMMMM","test",Rarity.Common,ItemType.Helmet));
         GameState game = new GameState(playingField, player);
+
+        (player.X, player.Y) = FindNearestWalkableTile(player.X, player.Y, playingField);
+
         SpawnEnemies(game);
         return game;
     }
 
-    public static void GetMovement(GameState gameState)
+    private static (int x, int y) FindNearestWalkableTile(int startX, int startY, PlayingField field)
     {
-        gameState.IncreaseDay();
+        if (field.GetTile(startX, startY).Walkable)
+            return (startX, startY);
+
+        // Spiral outward until we find a walkable tile
+        for (int radius = 1; radius < field.Width; radius++)
+        {
+            for (int dx = -radius; dx <= radius; dx++)
+            for (int dy = -radius; dy <= radius; dy++)
+            {
+                // Only check the outer ring of this radius
+                if (Math.Abs(dx) != radius && Math.Abs(dy) != radius) continue;
+
+                int x = Math.Clamp(startX + dx, 0, field.Width - 1);
+                int y = Math.Clamp(startY + dy, 0, field.Height - 1);
+
+                if (field.GetTile(x, y).Walkable)
+                    return (x, y);
+            }
+        }
+
+        return (startX, startY); // fallback, should never hit this
+    }
+
+    public static void GetMovement(GameState game)
+    {
+        game.IncreaseDay();
         ConsoleKey key = Console.ReadKey(intercept: true).Key;
+        var player = game.Player;
 
         switch (key)
         {
             case ConsoleKey.Z or ConsoleKey.W or ConsoleKey.UpArrow:
-                if (gameState.Player.Y > 0) gameState.Player.Y--;
+                if (player.Y > 0 && game.PlayingField.GetTile(player.Y - 1, player.X).Walkable)
+                    player.Y--;
                 break;
             case ConsoleKey.S or ConsoleKey.DownArrow:
-                if (gameState.Player.Y < gameState.PlayingField.Height - 1) gameState.Player.Y++;
+                if (player.Y < game.PlayingField.Height - 1 &&
+                    game.PlayingField.GetTile(player.Y + 1, player.X).Walkable)
+                    player.Y++;
                 break;
             case ConsoleKey.Q or ConsoleKey.A or ConsoleKey.LeftArrow:
-                if (gameState.Player.X > 0) gameState.Player.X--;
+                if (player.X > 0 && game.PlayingField.GetTile(player.Y, player.X - 1).Walkable)
+                    player.X--;
                 break;
             case ConsoleKey.D or ConsoleKey.RightArrow:
-                if (gameState.Player.X < gameState.PlayingField.Width - 1) gameState.Player.X++;
+                if (player.X < game.PlayingField.Width - 1 &&
+                    game.PlayingField.GetTile(player.Y, player.X + 1).Walkable)
+                    player.X++;
                 break;
             case ConsoleKey.Escape:
                 return;
             case ConsoleKey.E or ConsoleKey.Tab:
-                VisualHelper.ShowInventory(gameState);
+                VisualHelper.ShowInventory(game);
                 break;
         }
     }
 
-    public static void GoblinMovement(GameState game)
+    public static void EnemyMovement(GameState game)
     {
-        //Get random amount of enemies to move. (TODO: needs tweaking for amount of enemeies)
         var enemiesToMove = game.Enemies.Values
             .OrderBy(_ => _random.Next())
             .Take(_random.Next(1, game.Enemies.Count + 1))
@@ -58,18 +94,38 @@ public static class GameStateHelper
 
         foreach (var enemy in enemiesToMove)
         {
-            int newH = enemy.Y;
-            int newW = enemy.X;
+            int dirH = enemy.Y < game.Player.Y ? 1 : enemy.Y > game.Player.Y ? -1 : 0;
+            int dirW = enemy.X < game.Player.X ? 1 : enemy.X > game.Player.X ? -1 : 0;
 
-            if (enemy.Y < game.Player.Y) newH++;
-            else if (enemy.Y > game.Player.Y) newH--;
+            // Try candidates in priority order: direct, slide horizontal, slide vertical, diagonal back
+            (int h, int w)[] candidates =
+            [
+                (enemy.Y + dirH, enemy.X + dirW), // Direct toward player
+                (enemy.Y, enemy.X + dirW), // Slide horizontally
+                (enemy.Y + dirH, enemy.X), // Slide vertically
+                (enemy.Y + dirH, enemy.X - dirW), // Diagonal away on one axis
+                (enemy.Y - dirH, enemy.X + dirW), // Diagonal away on other axis
+            ];
 
-            if (enemy.X < game.Player.X) newW++;
-            else if (enemy.X > game.Player.X) newW--;
-
-            if (!game.Enemies.ContainsKey((newH, newW)))
-                game.MoveEnemy(enemy, newH, newW);
+            foreach (var (h, w) in candidates)
+            {
+                if (CheckEnemyMovementTile(h, w, game) && !game.Enemies.ContainsKey((h, w)))
+                {
+                    game.MoveEnemy(enemy, h, w);
+                    break;
+                }
+            }
         }
+    }
+
+    private static bool CheckEnemyMovementTile(int newH, int newW, GameState game)
+    {
+        if (game.PlayingField.GetTile(newH, newW).Walkable)
+        {
+            return true;
+        }
+
+        return false;
     }
 
     public static void CheckCombat(GameState game)
@@ -241,7 +297,6 @@ public static class GameStateHelper
 
     public static void SpawnEnemies(GameState game)
     {
-        // Scale enemy count and stats with difficulty
         int difficultyMultiplier = (int)game.Difficulty + 1;
         int enemyCount = 2 + difficultyMultiplier;
         int enemyHealth = (int)7.5 * difficultyMultiplier;
@@ -250,18 +305,29 @@ public static class GameStateHelper
 
         for (int i = 0; i < enemyCount; i++)
         {
+            (int x, int y) = SpawnHelper.GetEnemySpawnTile(game.PlayingField.Height, game.PlayingField.Width,
+                game.Player.Y, game.Player.X);
+
+            while (!IsSpawnableTile(x, y, game))
+                (x, y) = SpawnHelper.GetEnemySpawnTile(game.PlayingField.Height, game.PlayingField.Width, game.Player.Y,
+                    game.Player.X);
+
             var goblin = new Goblin(
                 health: enemyHealth,
                 name: $"Goblin_{game.Day}_{i}",
                 armor: enemyArmor,
                 damage: enemyDamage,
-                x: game.PlayingField.Width,
-                y: game.PlayingField.Height,
-                playerY: game.Player.Y,
-                playerX: game.Player.X
+                x: x,
+                y: y
             );
             game.AddEnemy(goblin);
         }
+    }
+
+    public static bool IsSpawnableTile(int x, int y, GameState game)
+    {
+        if (game.PlayingField.GetTile(y, x).Walkable) return true;
+        return false;
     }
 
     public static void SwitchEquipped(GameState game, Item item)
